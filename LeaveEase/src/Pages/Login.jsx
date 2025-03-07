@@ -13,7 +13,20 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await login(email, password, rememberMe);
-    navigate('/dashboard');
+    const  role = localStorage.getItem('role') || sessionStorage.getItem('role');
+    // const role = sessionStorage.getItem('role');
+    if(role === "ADMIN")
+    {
+      navigate('/admin/dashboard');
+    }
+    else if(role === "manager") 
+    {
+      navigate('/manager/dashboard');
+    }
+    else 
+    {
+      navigate('/dashboard')
+    }
   };
 
   return (

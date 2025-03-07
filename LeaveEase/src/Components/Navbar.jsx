@@ -1,37 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import axios from 'axios';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInitial, setUserInitial] = useState('');
-
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   // Check authentication status on component mount
   useEffect(() => {
     const checkAuthStatus = () => {
-      const authToken = localStorage.getItem('authToken');
-      if (authToken) {
-        setIsAuthenticated(true);
-        
-        // Get user data from localStorage or parse from JWT
-        const userData = localStorage.getItem('userData');
-        if (userData) {
-          try {
-            const parsedData = JSON.parse(userData);
-            if (parsedData.name) {
-              setUserInitial(parsedData.name.charAt(0).toUpperCase());
-            }
-          } catch (error) {
-            console.error('Error parsing user data:', error);
-            setUserInitial('U'); // Default initial if parsing fails
-          }
-        } else {
-          setUserInitial('U'); // Default initial if no user data found
-        }
-      } else {
-        setIsAuthenticated(false);
-      }
+      const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      setIsAuthenticated(!!authToken);
     };
+    const role = localStorage.getItem('role') || sessionStorage.getItem('role');
+    if(role === 'ADMIN')
+      setIsAdmin(true);
 
     checkAuthStatus();
     
@@ -43,11 +29,30 @@ const Navbar = () => {
     };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
+    sessionStorage.removeItem('authToken');
+    await axios.post('http://localhost:8080/api/auth/logout')
+    
     setIsAuthenticated(false);
+    navigate('/login');
     // Redirect to home or login page if needed
+  };
+
+  // Function to determine if a path is active
+  const isActivePath = (path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  // Get link class based on active state
+  const getLinkClass = (path) => {
+    const baseClass = "inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium";
+    return isActivePath(path) 
+      ? `${baseClass} border-primary-light text-primary-darker` 
+      : `${baseClass} border-transparent text-primary-medium hover:text-primary-dark`;
   };
 
   return (
@@ -64,36 +69,43 @@ const Navbar = () => {
               <span className="ml-2 text-xl font-bold text-primary-darker">LeaveEase</span>
             </Link>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link to="/" className="border-primary-light text-primary-darker inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+              <Link to="/" className={getLinkClass('/')}>
                 Home
               </Link>
-              <Link to="/features" className="border-transparent text-primary-medium hover:text-primary-dark inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+              <Link to="/features" className={getLinkClass('/features')}>
                 Features
               </Link>
-              <Link to="/about" className="border-transparent text-primary-medium hover:text-primary-dark inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+              <Link to="/about" className={getLinkClass('/about')}>
                 About
               </Link>
+              {isAuthenticated? <Link to="/holidays" className={getLinkClass('/holidays')}>
+                Holidays
+              </Link>: <></>}
+              {isAdmin && (
+                <Link to="/managers" className={getLinkClass('/managers')}>
+                  Managers
+                </Link>
+              )}
+              {isAdmin && (
+                <Link to="/admin/dashboard" className={getLinkClass('/admin')}>
+                  Admin
+                </Link>
+              )}
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {isAuthenticated ? (
-              <div className="relative ml-3">
-                <div>
-                  <button
-                    type="button"
-                    className="flex text-sm bg-primary-light rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
-                    id="user-menu-button"
-                    aria-expanded="false"
-                    aria-haspopup="true"
-                  >
-                    <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-primary-light text-white flex items-center justify-center font-medium">
-                      {userInitial}
-                    </div>
-                  </button>
-                </div>
-                {/* Add dropdown menu here if needed */}
-              </div>
+              <>
+                <Link to="/profile" className="ml-3 inline-flex items-center px-4 py-2 text-sm font-medium text-primary-light bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light">
+                  Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="ml-3 inline-flex items-center px-4 py-2 border border-primary-light text-sm font-medium rounded-md text-primary-light bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
+                >
+                  Sign out
+                </button>
+              </>
             ) : (
               <Link to="/login" className="ml-3 inline-flex items-center px-4 py-2 border border-primary-light text-sm font-medium rounded-md text-primary-light bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light">
                 Login
@@ -114,61 +126,6 @@ const Navbar = () => {
               </svg>
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      <div className={`${isMenuOpen ? 'block' : 'hidden'} sm:hidden`}>
-        <div className="pt-2 pb-3 space-y-1">
-          <Link to="/" className="bg-primary-light text-white block pl-3 pr-4 py-2 text-base font-medium">
-            Home
-          </Link>
-          <Link to="/features" className="text-primary-medium hover:bg-gray-50 hover:text-primary-dark block pl-3 pr-4 py-2 text-base font-medium">
-            Features
-          </Link>
-          <Link to="/about" className="text-primary-medium hover:bg-gray-50 hover:text-primary-dark block pl-3 pr-4 py-2 text-base font-medium">
-            About
-          </Link>
-        </div>
-        <div className="pt-4 pb-3 border-t border-gray-200">
-          {isAuthenticated ? (
-            <>
-              <div className="flex items-center px-4">
-                <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-primary-light text-white flex items-center justify-center font-medium">
-                    {userInitial}
-                  </div>
-                </div>
-                <div className="ml-3">
-                  <div className="text-base font-medium text-primary-darker">User Profile</div>
-                </div>
-              </div>
-              <div className="mt-3 space-y-1">
-                <Link to="/profile" className="block px-4 py-2 text-base font-medium text-primary-medium hover:text-primary-dark hover:bg-gray-50">
-                  Your Profile
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-base font-medium text-primary-medium hover:text-primary-dark hover:bg-gray-50"
-                >
-                  Sign out
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center px-4">
-                <Link to="/login" className="block w-full px-4 py-2 text-center text-sm font-medium text-white bg-primary-light rounded-md hover:bg-opacity-90">
-                  Login
-                </Link>
-              </div>
-              <div className="mt-3 flex items-center px-4">
-                <Link to="/register" className="block w-full px-4 py-2 text-center text-sm font-medium text-primary-light bg-white border border-primary-light rounded-md hover:bg-gray-50">
-                  Register
-                </Link>
-              </div>
-            </>
-          )}
         </div>
       </div>
     </nav>

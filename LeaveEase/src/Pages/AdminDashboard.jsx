@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 // import axios from 'axios';
 import LeaveRequestItem from '../Components/LeaveRequestItem';
 import Layout from '../Components/Layout';
+import axios from 'axios';
 
 const AdminDashboard = () => {
   // State for dashboard metrics
   const [dashboardData, setDashboardData] = useState({
     totalManagers: 0,
-    totalDepartments: 10, // Static value as specified
+    totalDepartments: 9, // Static value as specified
     pendingLeaveRequests: 0,
     rejectedLeaveRequests: 0,
     approvedLeaveRequests: 0,
@@ -17,7 +18,7 @@ const AdminDashboard = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
   useEffect(() => {
     // Function to fetch dashboard data
     const fetchDashboardData = async () => {
@@ -26,96 +27,125 @@ const AdminDashboard = () => {
 
       try {
         // COMMENTED AXIOS CALLS - Uncomment when backend is ready
-        /*
-        // Get dashboard metrics
-        const metricsResponse = await axios.get('/api/admin/dashboard/metrics', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
-        });
 
         // Get leave requests
-        const requestsResponse = await axios.get('/api/admin/leave-requests', {
+        const requestsResponse = await axios.get('http://localhost:8080/api/admin/leave-requests/pending', {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
+            Authorization: `Bearer ${token}`
           }
         });
 
-        setDashboardData({
-          totalManagers: metricsResponse.data.totalManagers,
-          totalDepartments: 10, // Static value
-          pendingLeaveRequests: metricsResponse.data.pendingLeaveRequests,
-          rejectedLeaveRequests: metricsResponse.data.rejectedLeaveRequests,
-          approvedLeaveRequests: metricsResponse.data.approvedLeaveRequests,
-        });
-
-        setLeaveRequests(requestsResponse.data.leaveRequests);
-        */
+        // Log the response to inspect the structure
+        console.log("Leave requests API response:", requestsResponse.data);
+        
+        // Check if response is an array or has a wrapper property
+        const leaveRequestsData = Array.isArray(requestsResponse.data) 
+          ? requestsResponse.data 
+          : requestsResponse.data.leaveRequests || [];
+        
+        // Transform the data if needed to match component expectations
+        const transformedRequests = leaveRequestsData.map(request => ({
+          id: request.id,
+          user: request.user || {},
+          leaveType: request.leaveType || 'Unknown',
+          startDate: request.startDate,
+          endDate: request.endDate,
+          status: request.status || 'pending',
+          reason: request.reason || '', // Add default if missing
+          appliedOn: request.appliedOn || new Date().toISOString().split('T')[0]
+        }));
+       
+        setLeaveRequests(transformedRequests);
 
         // DUMMY DATA FOR VISUALIZATION
         // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // await new Promise(resolve => setTimeout(resolve, 800));
+        const ManagerCount = axios.get('http://localhost:8080/api/admin/managers/count', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }); 
+        
+        const pendingLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/pending-leaves/managers', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        
+        // const ApprovedLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/approved-leaves/managers', {
+        //     headers: {
+        //         Authorization: `Bearer ${token}`
+        //     }
+        // });
 
+        const RejectedLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/rejected-leaves/managers', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
         // Set dummy dashboard data
         setDashboardData({
-          totalManagers: 24,
-          totalDepartments: 10, // Static value
-          pendingLeaveRequests: 8,
-          rejectedLeaveRequests: 3,
-          approvedLeaveRequests: 15,
+          totalManagers: (await ManagerCount).data,
+          totalDepartments: 9, // Static value
+          pendingLeaveRequests: (await pendingLeaveRequestsCount).data,
+          rejectedLeaveRequests:  (await RejectedLeaveRequestsCount).data,
+          approvedLeaveRequests: 0,
         });
 
         // Set dummy leave requests
-        setLeaveRequests([
-          {
-            id: 1,
-            employeeName: 'John Smith',
-            employeeId: 'EMP001',
-            department: 'Engineering',
-            leaveType: 'Annual',
-            fromDate: '2025-03-10',
-            toDate: '2025-03-15',
-            reason: 'Family vacation',
-            status: 'pending',
-            appliedOn: '2025-03-01',
-          },
-          {
-            id: 2,
-            employeeName: 'Sarah Johnson',
-            employeeId: 'EMP045',
-            department: 'Marketing',
-            leaveType: 'Sick',
-            fromDate: '2025-03-08',
-            toDate: '2025-03-09',
-            reason: 'Medical appointment',
-            status: 'pending',
-            appliedOn: '2025-03-05',
-          },
-          {
-            id: 3,
-            employeeName: 'Michael Brown',
-            employeeId: 'EMP023',
-            department: 'Finance',
-            leaveType: 'Personal',
-            fromDate: '2025-03-20',
-            toDate: '2025-03-20',
-            reason: 'Important personal matter',
-            status: 'pending',
-            appliedOn: '2025-03-04',
-          },
-          {
-            id: 4,
-            employeeName: 'Emily Davis',
-            employeeId: 'EMP067',
-            department: 'Human Resources',
-            leaveType: 'Annual',
-            fromDate: '2025-04-01',
-            toDate: '2025-04-05',
-            reason: 'Planned holiday',
-            status: 'pending',
-            appliedOn: '2025-03-02',
-          },
-        ]);
+        // setLeaveRequests([
+        //   {
+        //     id: 1,
+        //     employeeName: 'John Smith',
+        //     employeeId: 'EMP001',
+        //     department: 'Engineering',
+        //     leaveType: 'Annual',
+        //     fromDate: '2025-03-10',
+        //     toDate: '2025-03-15',
+        //     reason: 'Family vacation',
+        //     status: 'pending',
+        //     appliedOn: '2025-03-01',
+        //   },
+        //   {
+        //     id: 2,
+        //     employeeName: 'Sarah Johnson',
+        //     employeeId: 'EMP045',
+        //     department: 'Marketing',
+        //     leaveType: 'Sick',
+        //     fromDate: '2025-03-08',
+        //     toDate: '2025-03-09',
+        //     reason: 'Medical appointment',
+        //     status: 'pending',
+        //     appliedOn: '2025-03-05',
+        //   },
+        //   {
+        //     id: 3,
+        //     employeeName: 'Michael Brown',
+        //     employeeId: 'EMP023',
+        //     department: 'Finance',
+        //     leaveType: 'Personal',
+        //     fromDate: '2025-03-20',
+        //     toDate: '2025-03-20',
+        //     reason: 'Important personal matter',
+        //     status: 'pending',
+        //     appliedOn: '2025-03-04',
+        //   },
+        //   {
+        //     id: 4,
+        //     employeeName: 'Emily Davis',
+        //     employeeId: 'EMP067',
+        //     department: 'Human Resources',
+        //     leaveType: 'Annual',
+        //     fromDate: '2025-04-01',
+        //     toDate: '2025-04-05',
+        //     reason: 'Planned holiday',
+        //     status: 'pending',
+        //     appliedOn: '2025-03-02',
+        //   },
+        // ]);
+
+        // To test empty state, uncomment the following line
+        // setLeaveRequests([]);
 
       } catch (err) {
         setError('Failed to fetch dashboard data. Please try again later.');
@@ -301,13 +331,27 @@ const AdminDashboard = () => {
             <h2 className="text-lg font-medium" style={{ color: "#404258" }}>Leave Requests</h2>
           </div>
           
-          {leaveRequests.length === 0 ? (
-            <div className="p-6 text-center" style={{ color: "#6B728E" }}>
-              No leave requests found.
+          {leaveRequests?.length === 0 ? (
+            <div className="p-10 text-center flex flex-col items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: "#6B728E" }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <h3 className="text-lg font-medium mb-2" style={{ color: "#404258" }}>No Leave Requests</h3>
+              <p className="text-base mb-4" style={{ color: "#6B728E" }}>There are no pending leave requests at the moment.</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 text-white rounded-md flex items-center focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={{ backgroundColor: "#3C7EFC", boxShadow: "0 2px 4px rgba(60, 126, 252, 0.3)" }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
             </div>
           ) : (
             <ul className="divide-y divide-gray-200" style={{ borderColor: "#E8E8EF" }}>
-              {leaveRequests.map(request => (
+              {leaveRequests?.map(request => (
                 <LeaveRequestItem 
                   key={request.id}
                   request={request}

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect }) => {
+const HolidayListItem = ({ holiday, isSelectable, isSelected, onSelect }) => {
   // Color palette from HolidayList page
   const colorPalette = {
     primary: "#3C7EFC",
@@ -12,31 +12,31 @@ const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect }) => {
   };
 
   // Enhanced type styling using the color palette
-  const getRoleStyles = (role) => {
-    switch (role) {
-      case 'ADMIN':
+  const getTypeStyles = (type) => {
+    switch (type) {
+      case 'PUBLIC_HOLIDAY':
         return {
-          bg: `bg-purple-50`,
-          text: "text-purple-700",
-          label: "Admin"
+          bg: `bg-blue-50`,
+          text: "text-blue-700",
+          label: "Public"
         };
-      case 'MANAGER':
-        return {
-          bg: "bg-blue-50",
-          text: `text-blue-700`,
-          label: "Manager"
-        };
-      case 'EMPLOYEE':
+      case 'COMPANY':
         return {
           bg: "bg-gray-100",
           text: `text-gray-700`,
-          label: "Employee"
+          label: "Company"
+        };
+      case 'WEEKEND':
+        return {
+          bg: "bg-gray-100",
+          text: `text-gray-700`,
+          label: "Weekend"
         };
       default:
         return {
           bg: "bg-gray-100",
           text: `text-gray-700`,
-          label: role ? role.replace('_', ' ') : 'Unknown'
+          label: type ? type.replace('_', ' ') : 'Unknown'
         };
     }
   };
@@ -49,7 +49,7 @@ const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect }) => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const roleStyle = getRoleStyles(employee.role);
+  const typeStyle = getTypeStyles(holiday.type);
 
   return (
     <div 
@@ -63,39 +63,32 @@ const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect }) => {
               className="text-lg font-semibold mb-1"
               style={{ color: colorPalette.dark }}
             >
-              {employee.name}
+              {holiday.name}
             </h3>
             <p 
               className="text-sm mb-2"
               style={{ color: colorPalette.light }}
             >
-              {employee.email}
+              {formatDate(holiday.date)}
             </p>
             
-            <p 
-              className="text-sm mb-2"
-              style={{ color: colorPalette.medium }}
-            >
-              Department: {employee.department}
-            </p>
-            
-            {employee.joinDate && (
+            {holiday.description && (
               <p 
-                className="text-sm mb-3"
+                className="text-sm mb-3 line-clamp-2"
                 style={{ color: colorPalette.medium }}
               >
-                Joined: {formatDate(employee.joinDate)}
+                {holiday.description}
               </p>
             )}
             
             <span 
-              className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium ${roleStyle.bg} ${roleStyle.text}`}
+              className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}
               style={{ 
-                backgroundColor: roleStyle.label === "Manager" ? "rgba(60, 126, 252, 0.1)" : roleStyle.label === "Admin" ? "rgba(128, 90, 213, 0.1)" : "#F0F0F4",
-                color: roleStyle.label === "Manager" ? colorPalette.primary : roleStyle.label === "Admin" ? "#805AD5" : colorPalette.medium
+                backgroundColor: typeStyle.label === "Public" ? "rgba(60, 126, 252, 0.1)" : "#F0F0F4",
+                color: typeStyle.label === "Public" ? colorPalette.primary : colorPalette.medium
               }}
             >
-              {roleStyle.label}
+              {typeStyle.label}
             </span>
           </div>
           
@@ -104,7 +97,7 @@ const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect }) => {
               <input
                 type="checkbox"
                 checked={isSelected}
-                onChange={() => onSelect(employee.id)}
+                onChange={() => onSelect(holiday.id)}
                 className="w-5 h-5 rounded focus:ring-2 focus:ring-offset-2"
                 style={{ accentColor: colorPalette.primary }}
               />
@@ -116,4 +109,4 @@ const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect }) => {
   );
 };
 
-export default EmployeeListItem;
+export default HolidayListItem;
