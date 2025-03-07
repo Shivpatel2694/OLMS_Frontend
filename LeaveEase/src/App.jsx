@@ -8,7 +8,7 @@ import ContactUs from './Pages/ContactUs';
 import FeaturesPage from './Pages/Features';
 import AdminDashboard from './Pages/AdminDashboard';
 import HolidayList from './Pages/HolidayList';
-// import ManagersPage from './Pages/ManagerPage';
+import ManagersPage from './Pages/ManagerPage';
 // import LeaveManagementDashboard from './Pages/Dashboard';
 
 function App() {
@@ -25,7 +25,7 @@ function App() {
         <Route path='/features' element={<FeaturesPage/>}/>
         <Route path='/admin/dashboard' element={<AdminDashboard/>}/>
         <Route path='/holidays' element={<HolidayList/>}/>
-        {/* <Route path='/managers' element={<ManagersPage/>}/> */}
+        <Route path='/managers' element={<ManagersPage/>}/>
         {/* <Route path='/dashboard' element={<LeaveManagementDashboard/>}/> */}
       </Routes>
     </Router>
