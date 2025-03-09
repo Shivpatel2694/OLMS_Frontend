@@ -10,6 +10,8 @@ import AdminDashboard from './Pages/AdminDashboard';
 import HolidayList from './Pages/HolidayList';
 import ManagersPage from './Pages/ManagerPage';
 // import LeaveManagementDashboard from './Pages/Dashboard';
+import PrivateRoute from './PrivateRoute';
+import LeaveHistory from './Pages/History';
 
 function App() {
   
@@ -23,10 +25,13 @@ function App() {
         <Route path="/about" element={<AboutPage/>}/>
         <Route path='/contact' element={<ContactUs/>}/>
         <Route path='/features' element={<FeaturesPage/>}/>
+        <Route element={<PrivateRoute />}>
         <Route path='/admin/dashboard' element={<AdminDashboard/>}/>
         <Route path='/holidays' element={<HolidayList/>}/>
         <Route path='/managers' element={<ManagersPage/>}/>
         {/* <Route path='/dashboard' element={<LeaveManagementDashboard/>}/> */}
+        <Route path='/history' element={<LeaveHistory/>}/>
+        </Route>
       </Routes>
     </Router>
     </AuthProvider>

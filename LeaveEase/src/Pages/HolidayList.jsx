@@ -4,7 +4,7 @@ import Layout from '../Components/Layout';
 import HolidayListItem from '../Components/HolidayListItem'; // Import the external component
 
 const HolidayList = () => {
-  // State for holidays
+  
   const [holidays, setHolidays] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,13 +12,15 @@ const HolidayList = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [isAdmin,setIsAdmin] = useState(false);
   const [newHoliday, setNewHoliday] = useState({
     name: '',
     date: '',
     type: 'PUBLIC_HOLIDAY'
   });
   const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
-  // Color palette (same as in the provided files)
+  const role = localStorage.getItem('role') || sessionStorage.getItem('role')
+  
   const colorPalette = {
     primary: "#3C7EFC",
     dark: "#404258",
@@ -28,28 +30,36 @@ const HolidayList = () => {
     white: "#FFFFFF"
   };
 
-  // Function to format date in a more readable format
-//   const formatDate = (dateString) => {
-//     const options = { year: 'numeric', month: 'short', day: 'numeric' };
-//     return new Date(dateString).toLocaleDateString(undefined, options);
-//   };
 
   useEffect(() => {
     // Function to fetch holidays
     const fetchHolidays = async () => {
       setIsLoading(true);
       setError(null);
-
+      let response;
       try {
-        // COMMENTED AXIOS CALLS - Uncomment when backend is ready
-
-        // Get holidays
-        const response = await axios.get('http://localhost:8080/api/admin/holidays', {
+        if(role === 'ADMIN'){
+         response = await axios.get('http://localhost:8080/api/admin/holidays', {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
-        // console.log(response.data)   
+        setIsAdmin(true);
+      }
+      else if(role === 'MANAGER'){
+        response = await axios.get('http://localhost:8080/api/manager/holidays', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      }
+      else{
+        response = await axios.get('http://localhost:8080/api/employee/holidays', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+      }
         setHolidays(response.data);
 
       } catch (err) {
@@ -211,7 +221,7 @@ const HolidayList = () => {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-semibold" style={{ color: colorPalette.dark }}>Holiday List</h1>
             
-            <div className="flex space-x-3">
+            {isAdmin? <div className="flex space-x-3">
               {selectionMode ? (
                 <>
                   <button
@@ -265,7 +275,7 @@ const HolidayList = () => {
                   </button>
                 </>
               )}
-            </div>
+            </div>:<></>}
           </div>
           
           {/* Holiday Grid */}

@@ -19,142 +19,149 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
-  useEffect(() => {
-    // Function to fetch dashboard data
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      setError(null);
 
-      try {
-        // COMMENTED AXIOS CALLS - Uncomment when backend is ready
+   // Function to fetch dashboard data
+   const fetchDashboardData = async () => {
+    setIsLoading(true);
+    setError(null);
 
-        // Get leave requests
-        const requestsResponse = await axios.get('http://localhost:8080/api/admin/leave-requests/pending', {
+    try {
+      // COMMENTED AXIOS CALLS - Uncomment when backend is ready
+
+      // Get leave requests
+      const requestsResponse = await axios.get('http://localhost:8080/api/admin/leave-requests/pending', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+    
+      
+      // Check if response is an array or has a wrapper property
+      const leaveRequestsData = Array.isArray(requestsResponse.data) 
+        ? requestsResponse.data 
+        : requestsResponse.data.leaveRequests || [];
+      
+      // Transform the data if needed to match component expectations
+      const transformedRequests = leaveRequestsData.map(request => ({
+        id: request.id,
+        user: request.user || {},
+        leaveType: request.leaveType || 'Unknown',
+        startDate: request.startDate,
+        endDate: request.endDate,
+        status: request.status || 'pending',
+        reason: request.reason || '', // Add default if missing
+        appliedOn: request.appliedOn || new Date().toISOString().split('T')[0]
+      }));
+     
+      setLeaveRequests(transformedRequests);
+
+     
+      const ManagerCount = axios.get('http://localhost:8080/api/admin/managers/count', {
+          headers: {
+              Authorization: `Bearer ${token}`
+          }
+      }); 
+      
+      const pendingLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/pending-leaves/managers', {
+          headers: {
+              Authorization: `Bearer ${token}`
+          }
+      });
+      
+      // const ApprovedLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/approved-leaves/managers', {
+      //     headers: {
+      //         Authorization: `Bearer ${token}`
+      //     }
+      // });
+
+      const ApprovedLeaveRequestCount = axios.get('http://localhost:8080/api/admin/approved-leaves/managers',
+        {
           headers: {
             Authorization: `Bearer ${token}`
           }
-        });
+        }
+      );
+      
 
-        // Log the response to inspect the structure
-        console.log("Leave requests API response:", requestsResponse.data);
-        
-        // Check if response is an array or has a wrapper property
-        const leaveRequestsData = Array.isArray(requestsResponse.data) 
-          ? requestsResponse.data 
-          : requestsResponse.data.leaveRequests || [];
-        
-        // Transform the data if needed to match component expectations
-        const transformedRequests = leaveRequestsData.map(request => ({
-          id: request.id,
-          user: request.user || {},
-          leaveType: request.leaveType || 'Unknown',
-          startDate: request.startDate,
-          endDate: request.endDate,
-          status: request.status || 'pending',
-          reason: request.reason || '', // Add default if missing
-          appliedOn: request.appliedOn || new Date().toISOString().split('T')[0]
-        }));
-       
-        setLeaveRequests(transformedRequests);
+      const RejectedLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/rejected-leaves/managers', {
+          headers: {
+              Authorization: `Bearer ${token}`
+          }
+      });
+     
+      setDashboardData({
+        totalManagers: (await ManagerCount).data,
+        totalDepartments: 9, // Static value
+        pendingLeaveRequests: (await pendingLeaveRequestsCount).data,
+        rejectedLeaveRequests:  (await RejectedLeaveRequestsCount).data,
+        approvedLeaveRequests: (await ApprovedLeaveRequestCount).data.TOTAL_APPROVED_LEAVES,
+      });
 
-        // DUMMY DATA FOR VISUALIZATION
-        // Simulate API call delay
-        // await new Promise(resolve => setTimeout(resolve, 800));
-        const ManagerCount = axios.get('http://localhost:8080/api/admin/managers/count', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        }); 
-        
-        const pendingLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/pending-leaves/managers', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        
-        // const ApprovedLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/approved-leaves/managers', {
-        //     headers: {
-        //         Authorization: `Bearer ${token}`
-        //     }
-        // });
+      // Set dummy leave requests
+      // setLeaveRequests([
+      //   {
+      //     id: 1,
+      //     employeeName: 'John Smith',
+      //     employeeId: 'EMP001',
+      //     department: 'Engineering',
+      //     leaveType: 'Annual',
+      //     fromDate: '2025-03-10',
+      //     toDate: '2025-03-15',
+      //     reason: 'Family vacation',
+      //     status: 'pending',
+      //     appliedOn: '2025-03-01',
+      //   },
+      //   {
+      //     id: 2,
+      //     employeeName: 'Sarah Johnson',
+      //     employeeId: 'EMP045',
+      //     department: 'Marketing',
+      //     leaveType: 'Sick',
+      //     fromDate: '2025-03-08',
+      //     toDate: '2025-03-09',
+      //     reason: 'Medical appointment',
+      //     status: 'pending',
+      //     appliedOn: '2025-03-05',
+      //   },
+      //   {
+      //     id: 3,
+      //     employeeName: 'Michael Brown',
+      //     employeeId: 'EMP023',
+      //     department: 'Finance',
+      //     leaveType: 'Personal',
+      //     fromDate: '2025-03-20',
+      //     toDate: '2025-03-20',
+      //     reason: 'Important personal matter',
+      //     status: 'pending',
+      //     appliedOn: '2025-03-04',
+      //   },
+      //   {
+      //     id: 4,
+      //     employeeName: 'Emily Davis',
+      //     employeeId: 'EMP067',
+      //     department: 'Human Resources',
+      //     leaveType: 'Annual',
+      //     fromDate: '2025-04-01',
+      //     toDate: '2025-04-05',
+      //     reason: 'Planned holiday',
+      //     status: 'pending',
+      //     appliedOn: '2025-03-02',
+      //   },
+      // ]);
 
-        const RejectedLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/rejected-leaves/managers', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        // Set dummy dashboard data
-        setDashboardData({
-          totalManagers: (await ManagerCount).data,
-          totalDepartments: 9, // Static value
-          pendingLeaveRequests: (await pendingLeaveRequestsCount).data,
-          rejectedLeaveRequests:  (await RejectedLeaveRequestsCount).data,
-          approvedLeaveRequests: 0,
-        });
+      // To test empty state, uncomment the following line
+      // setLeaveRequests([]);
 
-        // Set dummy leave requests
-        // setLeaveRequests([
-        //   {
-        //     id: 1,
-        //     employeeName: 'John Smith',
-        //     employeeId: 'EMP001',
-        //     department: 'Engineering',
-        //     leaveType: 'Annual',
-        //     fromDate: '2025-03-10',
-        //     toDate: '2025-03-15',
-        //     reason: 'Family vacation',
-        //     status: 'pending',
-        //     appliedOn: '2025-03-01',
-        //   },
-        //   {
-        //     id: 2,
-        //     employeeName: 'Sarah Johnson',
-        //     employeeId: 'EMP045',
-        //     department: 'Marketing',
-        //     leaveType: 'Sick',
-        //     fromDate: '2025-03-08',
-        //     toDate: '2025-03-09',
-        //     reason: 'Medical appointment',
-        //     status: 'pending',
-        //     appliedOn: '2025-03-05',
-        //   },
-        //   {
-        //     id: 3,
-        //     employeeName: 'Michael Brown',
-        //     employeeId: 'EMP023',
-        //     department: 'Finance',
-        //     leaveType: 'Personal',
-        //     fromDate: '2025-03-20',
-        //     toDate: '2025-03-20',
-        //     reason: 'Important personal matter',
-        //     status: 'pending',
-        //     appliedOn: '2025-03-04',
-        //   },
-        //   {
-        //     id: 4,
-        //     employeeName: 'Emily Davis',
-        //     employeeId: 'EMP067',
-        //     department: 'Human Resources',
-        //     leaveType: 'Annual',
-        //     fromDate: '2025-04-01',
-        //     toDate: '2025-04-05',
-        //     reason: 'Planned holiday',
-        //     status: 'pending',
-        //     appliedOn: '2025-03-02',
-        //   },
-        // ]);
+    } catch (err) {
+      setError('Failed to fetch dashboard data. Please try again later.');
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        // To test empty state, uncomment the following line
-        // setLeaveRequests([]);
-
-      } catch (err) {
-        setError('Failed to fetch dashboard data. Please try again later.');
-        console.error('Error fetching dashboard data:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchDashboardData();
   }, []);
 
@@ -355,8 +362,15 @@ const AdminDashboard = () => {
                 <LeaveRequestItem 
                   key={request.id}
                   request={request}
-                  onApprove={() => handleApproveRequest(request.id)}
-                  onReject={() => handleRejectRequest(request.id)}
+                  onApprove={() => {
+                    handleApproveRequest(request.id);
+                    fetchDashboardData();
+                  }}
+                  onReject={() => {
+                    handleRejectRequest(request.id);
+                    fetchDashboardData();
+                  }}
+
                   colorPalette={{
                     primary: "#3C7EFC",
                     dark: "#404258",

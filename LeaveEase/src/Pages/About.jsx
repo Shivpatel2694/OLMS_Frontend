@@ -24,7 +24,7 @@ const AboutPage = () => {
             <h2 className="text-3xl font-bold mb-6" style={{ color: 'var(--color-slate)' }}>Our Story</h2>
             <div className="space-y-6" style={{ color: 'var(--color-blue-slate)' }}>
               <p>
-                LeaveEase was founded in 2023 with a simple mission: to eliminate the hassle and confusion of traditional leave management processes. After experiencing firsthand the challenges of tracking leave in growing organizations, our founders set out to create a solution that would make leave management effortless for both employees and HR teams.
+                LeaveEase was founded in 2025 with a simple mission: to eliminate the hassle and confusion of traditional leave management processes. After experiencing firsthand the challenges of tracking leave in growing organizations, our founders set out to create a solution that would make leave management effortless for both employees and HR teams.
               </p>
               <p>
                 What began as a simple leave tracking tool has evolved into a comprehensive platform that handles everything from request submissions to analytics, helping organizations of all sizes streamline their leave management processes.

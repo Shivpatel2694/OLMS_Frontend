@@ -35,8 +35,10 @@ const Navbar = () => {
     await axios.post('http://localhost:8080/api/auth/logout')
     
     setIsAuthenticated(false);
+    if(isAdmin === true)
+      setIsAdmin(false);
     navigate('/login');
-    // Redirect to home or login page if needed
+    
   };
 
   // Function to determine if a path is active
@@ -78,19 +80,37 @@ const Navbar = () => {
               <Link to="/about" className={getLinkClass('/about')}>
                 About
               </Link>
-              {isAuthenticated? <Link to="/holidays" className={getLinkClass('/holidays')}>
+              {isAuthenticated?<Link to="/holidays" className={getLinkClass('/holidays')}>
                 Holidays
-              </Link>: <></>}
-              {isAdmin && (
+              </Link>:<></>}
+              {(isAdmin && isAuthenticated)?
                 <Link to="/managers" className={getLinkClass('/managers')}>
                   Managers
-                </Link>
-              )}
-              {isAdmin && (
+                </Link> 
+                :
+                <></>
+              }
+              {(isAdmin && isAuthenticated)?
                 <Link to="/admin/dashboard" className={getLinkClass('/admin')}>
                   Admin
                 </Link>
-              )}
+                :
+                <></>
+              }
+              {(!isAdmin && isAuthenticated)?
+                <Link to="/dashboard" className={getLinkClass('/dashboard')}>
+                  Dashboard
+                </Link>
+                :
+                <></>
+              }
+              {(isAuthenticated)?
+                <Link to="/history" className={getLinkClass('/history')}>
+                  History
+                </Link>
+                :
+                <></>
+              }
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">

@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
+// import { Button } from "@/components/ui/button";
+import { CoolMode } from "@/Components/magicui/cool-mode";
+
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -9,15 +12,38 @@ const LoginPage = () => {
   const { login, loading, error } = useAuth();
 
   const navigate = useNavigate();
-
+  useEffect(() => {
+   
+    const isRememberMeEnabled = localStorage.getItem('rememberMe') === 'true';
+    
+    
+    if (isRememberMeEnabled) {
+      const savedEmail = sessionStorage.getItem('email');
+      const savedPassword = sessionStorage.getItem('password');
+      
+      
+      if (savedEmail) {
+        setEmail(savedEmail);
+      }
+      
+      if (savedPassword) {
+        setPassword(savedPassword);
+      }
+    
+      setRememberMe(true);
+    }
+  }, []);
   const handleSubmit = async (e) => {
     e.preventDefault();
     await login(email, password, rememberMe);
     const  role = localStorage.getItem('role') || sessionStorage.getItem('role');
-    // const role = sessionStorage.getItem('role');
+   
     if(role === "ADMIN")
     {
-      navigate('/admin/dashboard');
+      setTimeout(()=>{
+        navigate('/admin/dashboard');
+      },300)
+      // navigate('/admin/dashboard');
     }
     else if(role === "manager") 
     {
@@ -121,6 +147,9 @@ const LoginPage = () => {
           </div>
 
           <div>
+          <CoolMode>
+        
+      
             <button
               type="submit"
               disabled={loading}
@@ -135,6 +164,7 @@ const LoginPage = () => {
               ) : null}
               Sign in
             </button>
+            </CoolMode>
           </div>
         </form>
       </div>
