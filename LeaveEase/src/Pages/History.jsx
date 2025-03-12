@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import Layout from "../Components/Layout";
-import LeaveRequestItem from "../Components/LeaveRequestItem";
+import Layout from "../components/Layout";
+import LeaveRequestItem from "../components/LeaveRequestItem";
 
 const LeaveHistory = () => {
   const [activeTab, setActiveTab] = useState("approved");
@@ -14,6 +14,7 @@ const LeaveHistory = () => {
     approvedLeavesCount: 0,
   });
 
+  const role = localStorage.getItem('role') || sessionStorage.getItem('role');
   // Color palette from Cobalt Essence design
   const colorPalette = {
     primary: "#3C7EFC", // Blue
@@ -32,6 +33,7 @@ const LeaveHistory = () => {
     sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
 
   const fetchHistoryData = async () => {
+    if(role === 'ADMIN'){
     const ApprovedLeaveRequestCount = axios.get(
       "http://localhost:8080/api/admin/approved-leaves/managers",
       {
@@ -49,10 +51,35 @@ const LeaveHistory = () => {
       }
     );
     setHistoryData({
-      rejectedLeaveCount: (await RejectedLeaveRequestsCount).data,
-      approvedLeavesCount: (await ApprovedLeaveRequestCount).data
-        .TOTAL_APPROVED_LEAVES,
-    });
+        rejectedLeaveCount: (await RejectedLeaveRequestsCount).data,
+        approvedLeavesCount: (await ApprovedLeaveRequestCount).data
+          .TOTAL_APPROVED_LEAVES,
+      });
+}
+else if(role === 'Manager'){
+    const ApprovedLeaveRequestCount = axios.get(
+        "http://localhost:8080/api/manager/approved-leaves",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const RejectedLeaveRequestsCount = axios.get(
+        "http://localhost:8080/api/manager/rejected-leaves",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setHistoryData({
+        rejectedLeaveCount: (await RejectedLeaveRequestsCount).data,
+        approvedLeavesCount: (await ApprovedLeaveRequestCount).data
+          .TOTAL_APPROVED_LEAVES,
+      });
+}
+   
   };
 
   useEffect(() => {
@@ -65,6 +92,8 @@ const LeaveHistory = () => {
     setError(null);
 
     try {
+        if(role === 'ADMIN')
+      {  
       const response = await axios.get(
         "http://localhost:8080/api/admin/leave-requests/approved",
         {
@@ -74,7 +103,19 @@ const LeaveHistory = () => {
         }
       );
 
-      setApprovedLeaves(response.data);
+      setApprovedLeaves(response.data);}
+      else if(role === 'MANAGER'){
+        const response = await axios.get(
+            "http://localhost:8080/api/manager/leave-requests/approved",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+    
+          setApprovedLeaves(response.data);
+      }
     } catch (err) {
       console.error("Error fetching approved leave requests:", err);
       setError(
@@ -91,6 +132,7 @@ const LeaveHistory = () => {
     setError(null);
 
     try {
+      if(role === 'ADMIN'){
       const response = await axios.get(
         "http://localhost:8080/api/admin/leave-requests/rejected",
         {
@@ -101,6 +143,19 @@ const LeaveHistory = () => {
       );
 
       setRejectedLeaves(response.data);
+    }
+    else if(role === 'MANAGER'){
+      const response = await axios.get(
+        "http://localhost:8080/api/manager/leave-requests/rejected",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setRejectedLeaves(response.data);
+    }
     } catch (err) {
       console.error("Error fetching rejected leave requests:", err);
       setError(

@@ -69,12 +69,6 @@ const AdminDashboard = () => {
           }
       });
       
-      // const ApprovedLeaveRequestsCount = axios.get('http://localhost:8080/api/admin/approved-leaves/managers', {
-      //     headers: {
-      //         Authorization: `Bearer ${token}`
-      //     }
-      // });
-
       const ApprovedLeaveRequestCount = axios.get('http://localhost:8080/api/admin/approved-leaves/managers',
         {
           headers: {

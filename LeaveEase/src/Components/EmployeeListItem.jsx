@@ -1,6 +1,6 @@
 import React from 'react';
 
-const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect }) => {
+const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect, onClick }) => {
   // Color palette from HolidayList page
   const colorPalette = {
     primary: "#3C7EFC",
@@ -70,10 +70,22 @@ const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect }) => {
 
   const roleStyle = getRoleStyles(employee.role);
 
+  const handleItemClick = (e) => {
+    // If we're in selection mode, don't navigate
+    if (isSelectable) return;
+    
+    // If the click is on the checkbox, don't navigate
+    if (e.target.type === 'checkbox') return;
+    
+    // Otherwise, call the onClick handler
+    if (onClick) onClick(employee);
+  };
+
   return (
     <div 
-      className="rounded-lg overflow-hidden shadow-sm transition-all duration-200 hover:shadow"
+      className="rounded-lg overflow-hidden shadow-sm transition-all duration-200 hover:shadow cursor-pointer"
       style={{ backgroundColor: colorPalette.white, borderRadius: "12px" }}
+      onClick={handleItemClick}
     >
       <div className="p-4">
         {/* Top section with employee info and logo */}
@@ -130,9 +142,8 @@ const EmployeeListItem = ({ employee, isSelectable, isSelected, onSelect }) => {
         
         {/* Bottom section with checkbox */}
         {isSelectable && (
-          <div className="flex justify-end mt-2">
+          <div className="flex justify-end mt-2" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center">
-              {/* <label className="mr-2 text-sm" style={{ color: colorPalette.medium }}>Select</label> */}
               <input
                 type="checkbox"
                 checked={isSelected}

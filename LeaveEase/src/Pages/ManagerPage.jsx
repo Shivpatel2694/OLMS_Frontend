@@ -1,7 +1,8 @@
-import React, { useState, useEffect,useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Layout from "../Components/Layout";
 import EmployeeListItem from "../Components/EmployeeListItem";
+import { useNavigate } from "react-router-dom";
 
 const ManagerList = () => {
   // State for managers
@@ -19,9 +20,8 @@ const ManagerList = () => {
     firstName: "",
     lastName: "",
     email: "",
-    password: "", 
     department: {
-      id: "", 
+      id: "",
     },
     role: "MANAGER",
   });
@@ -40,6 +40,8 @@ const ManagerList = () => {
   const token =
     localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
+  const role = localStorage.getItem("role") || sessionStorage.getItem("role");
+
   const colorPalette = {
     primary: "#3C7EFC",
     dark: "#404258",
@@ -49,107 +51,65 @@ const ManagerList = () => {
     white: "#FFFFFF",
   };
 
-  // Dummy data for visualization
-  //   const dummyManagers = [
-  //     {
-  //       id: 1,
-  //       firstName: "John",
-  //       lastName: "Smith",
-  //       password:"password123",
-  //           email: "john.smith@company.com",
-  //       department: "Engineering",
-  //       role: "MANAGER",
-  //       joinDate: "2022-03-15"
-  //     },
-  //     {
-  //       id: 2,
-  //       firstName: "Sarah",
-  //       lastName: "Johnson",
-  //       password:"password123",
-  //       email: "sarah.johnson@company.com",
-  //       department: "Marketing",
-  //       role: "MANAGER",
-  //       joinDate: "2021-11-10"
-  //     },
-  //     {
-  //       id: 3,
-  //       firstName: "Michael",
-  //       lastName: "Chen",
-  //       password:"password123",
-  //       email: "michael.chen@company.com",
-  //       department: "Product",
-  //       role: "MANAGER",
-  //       joinDate: "2023-01-22"
-  //     },
-  //     {
-  //       id: 4,
-  //       firstName: "Maria",
-  //       lastName: "Rodriguez",
-  //       password:"password123",
-  //       email: "maria.rodriguez@company.com",
-  //       department: "HR",
-  //       role: "MANAGER",
-  //       joinDate: "2022-06-05"
-  //     },
-  //     {
-  //       id: 5,
-  //       firstName: "David",
-  //       lastName: "Williams",
-  //       email: "david.williams@company.com",
-  //       password:"password123",
-  //       department: "Finance",
-  //       role: "MANAGER",
-  //       joinDate: "2023-04-12"
-  //     }
-  //   ];
-
   useEffect(() => {
-    // Function to fetch managers
-    const fetchManagers = async () => {
+    const fetchEmployees = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        
+        if (role === "ADMIN") {
+          const response = await axios.get(
+            "http://localhost:8080/api/admin/managers",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          // console.log(response.data);
+          setManagers(response.data);
+        } else if (role === "MANAGER") {
+          const response = await axios.get(
+            "http://localhost:8080/api/manager/employees",
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          // console.log(response.data);
+          setManagers(response.data);
+        }
 
-        const response = await axios.get("http://localhost:8080/api/admin/managers",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        console.log(response.data);
-        setManagers(response.data);
-      
         setTimeout(() => {
           setIsLoading(false);
         }, 1000);
       } catch (err) {
-        setError("Failed to fetch manager data. Please try again later.");
+        setError("Failed to fetch  data. Please try again later.");
         console.error("Error fetching managers:", err);
         setIsLoading(false);
       }
     };
 
-    fetchManagers();
+    fetchEmployees();
   }, []);
 
-  
-  const searchManagersByEmail = async (email) => {
+  const searchEmployeesByEmail = async (email) => {
     setIsLoading(true);
+
+    const baseUrl =
+      role === "ADMIN"
+        ? "http://localhost:8080/api/admin/managers"
+        : "http://localhost:8080/api/manager/employees";
 
     try {
       if (!email) {
-        // If search is cleared, fetch all managers
-        const response = await axios.get(
-          "http://localhost:8080/api/admin/managers",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // If search is cleared, fetch all managers or employees based on role
+        const response = await axios.get(baseUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         // Transform data to include full name
         const managersWithFullName = response.data.map((manager) => ({
@@ -159,16 +119,18 @@ const ManagerList = () => {
 
         setManagers(managersWithFullName);
       } else {
-        // Use the provided search-by-email endpoint
-        const response = await axios.get(
-          `http://localhost:8080/api/admin/managers/search-by-email`,
-          {
-            params: { email },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // Use the appropriate search-by-email endpoint based on role
+        const searchUrl =
+          role === "ADMIN"
+            ? `${baseUrl}/search-by-email`
+            : `${baseUrl}/search-by-email`;
+
+        const response = await axios.get(searchUrl, {
+          params: { email },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         // Transform data to include full name
         const managersWithFullName = response.data.map((manager) => ({
@@ -186,10 +148,15 @@ const ManagerList = () => {
     }
   };
 
- 
+  const navigate = useNavigate();
+  const handleManagerClick = (manager) => {
+    // Navigate to manager profile page
+    navigate(`/profile/${manager.id}`);
+  };
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      searchManagersByEmail(searchQuery);
+      searchEmployeesByEmail(searchQuery);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
@@ -200,73 +167,82 @@ const ManagerList = () => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, [])
-  const handleCreateManager = async () => {
+  }, []);
+  const handleCreateEmployee = async () => {
+    setIsLoading(true);
+    // Validate required fields (department only required for ADMIN)
     if (
       !newManager.firstName ||
       !newManager.lastName ||
       !newManager.email ||
-      !newManager.department.id
+      (role === "ADMIN" && !newManager.department.id)
     ) {
       alert("Please fill in all required fields");
       return;
     }
-  
+
     try {
-      // Get the department name from the selected ID
-      const deptId = parseInt(newManager.department.id);
-      const deptName = departments[deptId - 1] || ""; // -1 because array is 0-indexed but IDs start at 1
-  
+      // Get the department name for admin users
+      let deptId, deptName;
+      if (role === "ADMIN") {
+        deptId = parseInt(newManager.department.id);
+        deptName = departments[deptId - 1] || ""; // -1 because array is 0-indexed but IDs start at 1
+      }
+
       // Prepare the request body according to the API requirements
-      const managerData = {
+      const employeeData = {
         firstName: newManager.firstName,
         lastName: newManager.lastName,
         email: newManager.email,
         password: newManager.password,
-        department: {
-          id: deptId,
-          name: deptName // Include the name here
-        },
+        // Include department only for admin users
+        ...(role === "ADMIN" && {
+          department: {
+            id: deptId,
+            name: deptName,
+          },
+        }),
         // Role is not part of the required body, so we're not including it
       };
-  
-      const response = await axios.post(
-        "http://localhost:8080/api/admin/manager",
-        managerData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+
+      // Use different endpoints based on user role
+      const endpoint =
+        role === "ADMIN"
+          ? "http://localhost:8080/api/admin/manager"
+          : "http://localhost:8080/api/manager/employees";
+
+      const response = await axios.post(endpoint, employeeData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
       const capitalizeFirstLetter = (string) => {
-        if (!string) return '';
+        if (!string) return "";
         return string.charAt(0).toUpperCase() + string.slice(1);
       };
-  
-      // Make sure the created manager has the department name
-      const createdManager = {
+
+      // Format the created employee based on the response
+      const createdEmployee = {
         ...response.data,
         name: `${response.data.firstName} ${response.data.lastName}`,
-        department: {
-          ...response.data.department,
-          name: response.data.department.name || deptName // Ensure name is set
-        }
+        department: response.data.department || {},
       };
-      const formattedManager = {
-        ...newManager,
-        firstName: capitalizeFirstLetter(createdManager.firstName),
-        lastName: capitalizeFirstLetter(createdManager.lastName)
+
+      const formattedEmployee = {
+        ...createdEmployee,
+        firstName: capitalizeFirstLetter(createdEmployee.firstName),
+        lastName: capitalizeFirstLetter(createdEmployee.lastName),
       };
-      setManagers((prevManagers) => [...prevManagers, formattedManager]);
-  
+
+      setManagers((prevManagers) => [...prevManagers, formattedEmployee]);
+
       // Reset form and close modal
       setNewManager({
         firstName: "",
         lastName: "",
         email: "",
-        password: "",
         department: {
           id: "",
         },
@@ -274,8 +250,17 @@ const ManagerList = () => {
       });
       setShowCreateModal(false);
     } catch (err) {
-      console.error("Error creating manager:", err);
-      alert("Failed to create manager. Please try again.");
+      console.error(
+        `Error creating ${role === "ADMIN" ? "manager" : "employee"}:`,
+        err
+      );
+      alert(
+        `Failed to create ${
+          role === "ADMIN" ? "manager" : "employee"
+        }. Please try again.`
+      );
+    }finally{
+      setIsLoading(false);
     }
   };
 
@@ -289,18 +274,21 @@ const ManagerList = () => {
     setShowDeleteConfirmModal(true);
   };
 
-  
   const confirmDeleteManagers = async () => {
     try {
+      for (const managerId of selectedManagers) {
+        // Use different endpoints based on user role
+        const endpoint =
+          role === "ADMIN"
+            ? `http://localhost:8080/api/admin/manager/${managerId}`
+            : `http://localhost:8080/api/manager/employees/${managerId}`;
 
-        for (const managerId of selectedManagers) {
-          await axios.delete(`http://localhost:8080/api/admin/manager/${managerId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-        }
-        
+        await axios.delete(endpoint, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
 
       // Update local state for visualization
       setManagers((prevManagers) =>
@@ -312,12 +300,18 @@ const ManagerList = () => {
       setSelectionMode(false);
       setShowDeleteConfirmModal(false);
     } catch (err) {
-      console.error("Error deleting managers:", err);
-      alert("Failed to delete selected managers. Please try again.");
+      console.error(
+        `Error deleting ${role === "ADMIN" ? "managers" : "employees"}:`,
+        err
+      );
+      alert(
+        `Failed to delete selected ${
+          role === "ADMIN" ? "managers" : "employees"
+        }. Please try again.`
+      );
       setShowDeleteConfirmModal(false);
     }
   };
-
   // Function to toggle selection of a manager
   const toggleManagerSelection = (managerId) => {
     if (selectedManagers.includes(managerId)) {
@@ -340,7 +334,7 @@ const ManagerList = () => {
               style={{ borderColor: colorPalette.primary }}
             ></div>
             <p className="mt-4" style={{ color: colorPalette.dark }}>
-              Loading manager data...
+              Loading data...
             </p>
           </div>
         </div>
@@ -427,9 +421,8 @@ const ManagerList = () => {
               className="text-2xl font-semibold"
               style={{ color: colorPalette.dark }}
             >
-              Manager List
+              {role === "ADMIN" ? "Manager" : "Employee"} List
             </h1>
-
             <div className="flex space-x-3">
               {selectionMode ? (
                 <>
@@ -469,7 +462,7 @@ const ManagerList = () => {
                       boxShadow: "0 2px 4px rgba(60, 126, 252, 0.3)",
                     }}
                   >
-                    Add Manager
+                    Add
                   </button>
                   <button
                     onClick={() => setSelectionMode(true)}
@@ -480,7 +473,7 @@ const ManagerList = () => {
                       color: colorPalette.medium,
                     }}
                   >
-                    Select Managers
+                    Select
                   </button>
                 </>
               )}
@@ -547,7 +540,6 @@ const ManagerList = () => {
             </div>
           </div>
 
-          {/* Manager List */}
           <div
             className="bg-white rounded-lg shadow-md overflow-hidden"
             style={{ borderRadius: "16px" }}
@@ -560,7 +552,7 @@ const ManagerList = () => {
                 className="text-lg font-medium"
                 style={{ color: colorPalette.dark }}
               >
-                Company Managers
+                Company {role === "ADMIN" ? "Manager" : "Employee"}
               </h2>
             </div>
 
@@ -570,8 +562,10 @@ const ManagerList = () => {
                 style={{ color: colorPalette.light }}
               >
                 {searchQuery
-                  ? "No managers found matching your search."
-                  : "No managers found."}
+                  ? `No ${
+                      role === "ADMIN" ? "managers" : "employees"
+                    } found matching your search.`
+                  : `No ${role === "ADMIN" ? "managers" : "employees"} found.`}
               </div>
             ) : (
               <div className="p-4">
@@ -595,6 +589,7 @@ const ManagerList = () => {
                               onSelect={() =>
                                 toggleManagerSelection(manager.id)
                               }
+                              onClick={handleManagerClick}
                             />
                           ))}
                         </div>
@@ -606,7 +601,7 @@ const ManagerList = () => {
                     className="p-6 text-center"
                     style={{ color: colorPalette.light }}
                   >
-                    No managers found.
+                    No {role === "ADMIN" ? "Manager" : "Employee"} found.
                   </div>
                 )}
               </div>
@@ -615,8 +610,8 @@ const ManagerList = () => {
         </div>
       </div>
 
-     {/* Create Manager Modal */}
-     {showCreateModal && (
+      {/* Create Manager Modal */}
+      {showCreateModal && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div
@@ -639,7 +634,7 @@ const ManagerList = () => {
                   className="text-lg leading-6 font-medium"
                   style={{ color: colorPalette.dark }}
                 >
-                  Add New Manager
+                  Add New {role === "ADMIN" ? "Manager" : "Employee"}
                 </h3>
                 <div className="mt-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -713,41 +708,44 @@ const ManagerList = () => {
                       required
                     />
                   </div>
-                  <div>
-                    <label
-                      htmlFor="department"
-                      className="block text-sm font-medium"
-                      style={{ color: colorPalette.dark }}
-                    >
-                      Department *
-                    </label>
-                    <select
-                      id="department"
-                      name="department"
-                      value={newManager.department.id || ""}
-                      onChange={(e) => {
-                        const deptId = e.target.value;
-                        const deptName = departments[parseInt(deptId) - 1] || "";
-                        setNewManager({
-                          ...newManager,
-                          department: {
-                            id: deptId,
-                            name: deptName
-                          },
-                        })
-                      }}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      style={{ borderColor: "#E8E8EF" }}
-                      required
-                    >
-                      <option value="">Select a department</option>
-                      {departments.map((dept, index) => (
-                        <option key={index} value={index + 1}>
-                          {dept}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {role === "ADMIN" && (
+                    <div>
+                      <label
+                        htmlFor="department"
+                        className="block text-sm font-medium"
+                        style={{ color: colorPalette.dark }}
+                      >
+                        Department *
+                      </label>
+                      <select
+                        id="department"
+                        name="department"
+                        value={newManager.department.id || ""}
+                        onChange={(e) => {
+                          const deptId = e.target.value;
+                          const deptName =
+                            departments[parseInt(deptId) - 1] || "";
+                          setNewManager({
+                            ...newManager,
+                            department: {
+                              id: deptId,
+                              name: deptName,
+                            },
+                          });
+                        }}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        style={{ borderColor: "#E8E8EF" }}
+                        required
+                      >
+                        <option value="">Select a department</option>
+                        {departments.map((dept, index) => (
+                          <option key={index} value={index + 1}>
+                            {dept}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label
                       htmlFor="role"
@@ -764,10 +762,12 @@ const ManagerList = () => {
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       style={{ borderColor: "#E8E8EF" }}
                     >
-                      <option value="MANAGER">MANAGER</option>
+                      <option value="MANAGER">
+                        {role === "ADMIN" ? "Manager" : "Employee"}{" "}
+                      </option>
                     </select>
                   </div>
-                  <div>
+                  {/* <div>
                     <label
                       htmlFor="password"
                       className="block text-sm font-medium"
@@ -781,13 +781,16 @@ const ManagerList = () => {
                       id="password"
                       value={newManager.password}
                       onChange={(e) =>
-                        setNewManager({ ...newManager, password: e.target.value })
+                        setNewManager({
+                          ...newManager,
+                          password: e.target.value,
+                        })
                       }
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       style={{ borderColor: "#E8E8EF" }}
                       required
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
               <div
@@ -799,13 +802,16 @@ const ManagerList = () => {
                   onClick={(e) => {
                     e.preventDefault();
                     // Validate form before submission
-                    if (!newManager.firstName || !newManager.lastName || 
-                        !newManager.email || !newManager.password || 
-                        !newManager.department.id) {
+                    if (
+                      !newManager.firstName ||
+                      !newManager.lastName ||
+                      !newManager.email ||
+                      (role === "ADMIN" && !newManager.department.id)
+                    ) {
                       alert("Please fill in all required fields");
                       return;
                     }
-                    handleCreateManager();
+                    handleCreateEmployee();
                   }}
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
                   style={{
@@ -813,7 +819,7 @@ const ManagerList = () => {
                     boxShadow: "0 2px 4px rgba(60, 126, 252, 0.3)",
                   }}
                 >
-                  Add Manager
+                  Add {role === "ADMIN" ? "Manager" : "Employee"}
                 </button>
                 <button
                   type="button"
@@ -882,7 +888,8 @@ const ManagerList = () => {
                       className="text-lg leading-6 font-medium"
                       style={{ color: colorPalette.dark }}
                     >
-                      Delete Selected Managers
+                      Delete Selected{" "}
+                      {role === "ADMIN" ? "Manager" : "Employee"}
                     </h3>
                     <div className="mt-2">
                       <p style={{ color: colorPalette.medium }}>
