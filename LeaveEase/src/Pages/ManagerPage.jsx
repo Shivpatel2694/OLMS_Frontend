@@ -3,6 +3,7 @@ import axios from "axios";
 import Layout from "../Components/Layout";
 import EmployeeListItem from "../Components/EmployeeListItem";
 import { useNavigate } from "react-router-dom";
+import { MultiStepLoader } from "../Components/ui/multi-step-loader";
 
 const ManagerList = () => {
   // State for managers
@@ -15,7 +16,9 @@ const ManagerList = () => {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef(null);
-
+  const [loadingSteps, setLoadingSteps] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [createError, setCreateError] = useState(null);
   const [newManager, setNewManager] = useState({
     firstName: "",
     lastName: "",
@@ -25,6 +28,16 @@ const ManagerList = () => {
     },
     role: "MANAGER",
   });
+  const loadingStates = [
+    { text: "Preparing data..." },
+    { text: "Sending data..." },
+    { text: "Creating account..." },
+    { text: "Sending email notification..." },
+    { text: "Account successfully created!" },
+  ];
+  const errorState = [
+    { text: "There seems to be some error. Please try again." },
+  ];
 
   const departments = [
     "Human Resources",
@@ -169,8 +182,12 @@ const ManagerList = () => {
     }
   }, []);
   const handleCreateEmployee = async () => {
-    setIsLoading(true);
-    // Validate required fields (department only required for ADMIN)
+    // setIsLoading(true);
+
+    setCreateError(null);
+    setLoadingSteps(true);
+    setCurrentStep(0);
+
     if (
       !newManager.firstName ||
       !newManager.lastName ||
@@ -178,10 +195,14 @@ const ManagerList = () => {
       (role === "ADMIN" && !newManager.department.id)
     ) {
       alert("Please fill in all required fields");
+      setLoadingSteps(false);
       return;
     }
 
     try {
+      setCurrentStep(1);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       // Get the department name for admin users
       let deptId, deptName;
       if (role === "ADMIN") {
@@ -204,7 +225,7 @@ const ManagerList = () => {
         }),
         // Role is not part of the required body, so we're not including it
       };
-
+      setCurrentStep(2);
       // Use different endpoints based on user role
       const endpoint =
         role === "ADMIN"
@@ -217,6 +238,9 @@ const ManagerList = () => {
           "Content-Type": "application/json",
         },
       });
+
+      setCurrentStep(3);
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
       const capitalizeFirstLetter = (string) => {
         if (!string) return "";
@@ -236,6 +260,9 @@ const ManagerList = () => {
         lastName: capitalizeFirstLetter(createdEmployee.lastName),
       };
 
+      setCurrentStep(4);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       setManagers((prevManagers) => [...prevManagers, formattedEmployee]);
 
       // Reset form and close modal
@@ -248,19 +275,26 @@ const ManagerList = () => {
         },
         role: "MANAGER",
       });
-      setShowCreateModal(false);
+      // setShowCreateModal(false);
+
+      setTimeout(() => {
+        setShowCreateModal(false);
+        setLoadingSteps(false);
+      }, 500);
     } catch (err) {
       console.error(
         `Error creating ${role === "ADMIN" ? "manager" : "employee"}:`,
         err
       );
-      alert(
-        `Failed to create ${
-          role === "ADMIN" ? "manager" : "employee"
-        }. Please try again.`
-      );
-    }finally{
-      setIsLoading(false);
+      // alert(
+      //   `Failed to create ${
+      //     role === "ADMIN" ? "manager" : "employee"
+      //   }. Please try again.`
+      // );
+      setCreateError(err.message || "Unknown error occurred");
+      setLoadingSteps(false);
+    } finally {
+      // setIsLoading(false);
     }
   };
 
@@ -627,147 +661,170 @@ const ManagerList = () => {
             >
               &#8203;
             </span>
+            {loadingSteps ? (
+              <div className="inline-block align-middle bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                <div className="text-center">
+                  <MultiStepLoader
+                    loadingStates={createError ? errorState : loadingStates}
+                    loading={loadingSteps}
+                    duration={800}
+                    loop={false}
+                    currentStep={currentStep}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <h3
+                    className="text-lg leading-6 font-medium"
+                    style={{ color: colorPalette.dark }}
+                  >
+                    Add New {role === "ADMIN" ? "Manager" : "Employee"}
+                  </h3>
 
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <h3
-                  className="text-lg leading-6 font-medium"
-                  style={{ color: colorPalette.dark }}
-                >
-                  Add New {role === "ADMIN" ? "Manager" : "Employee"}
-                </h3>
-                <div className="mt-4 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="firstName"
-                        className="block text-sm font-medium"
-                        style={{ color: colorPalette.dark }}
-                      >
-                        First Name *
-                      </label>
-                      <input
-                        type="text"
-                        name="firstName"
-                        id="firstName"
-                        value={newManager.firstName}
-                        onChange={(e) =>
-                          setNewManager({
-                            ...newManager,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        style={{ borderColor: "#E8E8EF" }}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="lastName"
-                        className="block text-sm font-medium"
-                        style={{ color: colorPalette.dark }}
-                      >
-                        Last Name *
-                      </label>
-                      <input
-                        type="text"
-                        name="lastName"
-                        id="lastName"
-                        value={newManager.lastName}
-                        onChange={(e) =>
-                          setNewManager({
-                            ...newManager,
-                            lastName: e.target.value,
-                          })
-                        }
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        style={{ borderColor: "#E8E8EF" }}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="email"
-                      className="block text-sm font-medium"
-                      style={{ color: colorPalette.dark }}
-                    >
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={newManager.email}
-                      onChange={(e) =>
-                        setNewManager({ ...newManager, email: e.target.value })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      style={{ borderColor: "#E8E8EF" }}
-                      required
-                    />
-                  </div>
-                  {role === "ADMIN" && (
-                    <div>
-                      <label
-                        htmlFor="department"
-                        className="block text-sm font-medium"
-                        style={{ color: colorPalette.dark }}
-                      >
-                        Department *
-                      </label>
-                      <select
-                        id="department"
-                        name="department"
-                        value={newManager.department.id || ""}
-                        onChange={(e) => {
-                          const deptId = e.target.value;
-                          const deptName =
-                            departments[parseInt(deptId) - 1] || "";
-                          setNewManager({
-                            ...newManager,
-                            department: {
-                              id: deptId,
-                              name: deptName,
-                            },
-                          });
-                        }}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        style={{ borderColor: "#E8E8EF" }}
-                        required
-                      >
-                        <option value="">Select a department</option>
-                        {departments.map((dept, index) => (
-                          <option key={index} value={index + 1}>
-                            {dept}
-                          </option>
-                        ))}
-                      </select>
+                  {/* Add error message display */}
+                  {createError && (
+                    <div className="mt-2 p-2 bg-red-50 text-red-600 rounded">
+                      Error: {createError}
                     </div>
                   )}
-                  <div>
-                    <label
-                      htmlFor="role"
-                      className="block text-sm font-medium"
-                      style={{ color: colorPalette.dark }}
-                    >
-                      Role
-                    </label>
-                    <select
-                      value={newManager.role}
-                      onChange={(e) =>
-                        setNewManager({ ...newManager, role: e.target.value })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      style={{ borderColor: "#E8E8EF" }}
-                    >
-                      <option value="MANAGER">
-                        {role === "ADMIN" ? "Manager" : "Employee"}{" "}
-                      </option>
-                    </select>
-                  </div>
-                  {/* <div>
+
+                  <div className="mt-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="firstName"
+                          className="block text-sm font-medium"
+                          style={{ color: colorPalette.dark }}
+                        >
+                          First Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="firstName"
+                          id="firstName"
+                          value={newManager.firstName}
+                          onChange={(e) =>
+                            setNewManager({
+                              ...newManager,
+                              firstName: e.target.value,
+                            })
+                          }
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          style={{ borderColor: "#E8E8EF" }}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="lastName"
+                          className="block text-sm font-medium"
+                          style={{ color: colorPalette.dark }}
+                        >
+                          Last Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="lastName"
+                          id="lastName"
+                          value={newManager.lastName}
+                          onChange={(e) =>
+                            setNewManager({
+                              ...newManager,
+                              lastName: e.target.value,
+                            })
+                          }
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          style={{ borderColor: "#E8E8EF" }}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium"
+                        style={{ color: colorPalette.dark }}
+                      >
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        value={newManager.email}
+                        onChange={(e) =>
+                          setNewManager({
+                            ...newManager,
+                            email: e.target.value,
+                          })
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        style={{ borderColor: "#E8E8EF" }}
+                        required
+                      />
+                    </div>
+                    {role === "ADMIN" && (
+                      <div>
+                        <label
+                          htmlFor="department"
+                          className="block text-sm font-medium"
+                          style={{ color: colorPalette.dark }}
+                        >
+                          Department *
+                        </label>
+                        <select
+                          id="department"
+                          name="department"
+                          value={newManager.department.id || ""}
+                          onChange={(e) => {
+                            const deptId = e.target.value;
+                            const deptName =
+                              departments[parseInt(deptId) - 1] || "";
+                            setNewManager({
+                              ...newManager,
+                              department: {
+                                id: deptId,
+                                name: deptName,
+                              },
+                            });
+                          }}
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                          style={{ borderColor: "#E8E8EF" }}
+                          required
+                        >
+                          <option value="">Select a department</option>
+                          {departments.map((dept, index) => (
+                            <option key={index} value={index + 1}>
+                              {dept}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <div>
+                      <label
+                        htmlFor="role"
+                        className="block text-sm font-medium"
+                        style={{ color: colorPalette.dark }}
+                      >
+                        Role
+                      </label>
+                      <select
+                        value={newManager.role}
+                        onChange={(e) =>
+                          setNewManager({ ...newManager, role: e.target.value })
+                        }
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        style={{ borderColor: "#E8E8EF" }}
+                      >
+                        <option value="MANAGER">
+                          {role === "ADMIN" ? "Manager" : "Employee"}{" "}
+                        </option>
+                      </select>
+                    </div>
+                    {/* <div>
                     <label
                       htmlFor="password"
                       className="block text-sm font-medium"
@@ -791,50 +848,51 @@ const ManagerList = () => {
                       required
                     />
                   </div> */}
+                  </div>
+                </div>
+                <div
+                  className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
+                  style={{ backgroundColor: "#F8F8FB" }}
+                >
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      // Validate form before submission
+                      if (
+                        !newManager.firstName ||
+                        !newManager.lastName ||
+                        !newManager.email ||
+                        (role === "ADMIN" && !newManager.department.id)
+                      ) {
+                        alert("Please fill in all required fields");
+                        return;
+                      }
+                      handleCreateEmployee();
+                    }}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+                    style={{
+                      backgroundColor: colorPalette.primary,
+                      boxShadow: "0 2px 4px rgba(60, 126, 252, 0.3)",
+                    }}
+                  >
+                    Add {role === "ADMIN" ? "Manager" : "Employee"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border shadow-sm px-4 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    style={{
+                      backgroundColor: colorPalette.white,
+                      borderColor: colorPalette.light,
+                      color: colorPalette.medium,
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
-              <div
-                className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
-                style={{ backgroundColor: "#F8F8FB" }}
-              >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Validate form before submission
-                    if (
-                      !newManager.firstName ||
-                      !newManager.lastName ||
-                      !newManager.email ||
-                      (role === "ADMIN" && !newManager.department.id)
-                    ) {
-                      alert("Please fill in all required fields");
-                      return;
-                    }
-                    handleCreateEmployee();
-                  }}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-                  style={{
-                    backgroundColor: colorPalette.primary,
-                    boxShadow: "0 2px 4px rgba(60, 126, 252, 0.3)",
-                  }}
-                >
-                  Add {role === "ADMIN" ? "Manager" : "Employee"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border shadow-sm px-4 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  style={{
-                    backgroundColor: colorPalette.white,
-                    borderColor: colorPalette.light,
-                    color: colorPalette.medium,
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
