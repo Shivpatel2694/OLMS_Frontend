@@ -286,19 +286,14 @@ const ManagerList = () => {
         `Error creating ${role === "ADMIN" ? "manager" : "employee"}:`,
         err
       );
-      // alert(
-      //   `Failed to create ${
-      //     role === "ADMIN" ? "manager" : "employee"
-      //   }. Please try again.`
-      // );
-      setCreateError(err.message || "Unknown error occurred");
+      
+      setCreateError("Error creating the account. Please try again.");
       setLoadingSteps(false);
     } finally {
       // setIsLoading(false);
     }
   };
 
-  // Function to handle manager deletion
   const handleDeleteSelectedManagers = async () => {
     if (selectedManagers.length === 0) {
       alert("Please select at least one manager to delete");
@@ -324,12 +319,10 @@ const ManagerList = () => {
         });
       }
 
-      // Update local state for visualization
       setManagers((prevManagers) =>
         prevManagers.filter((manager) => !selectedManagers.includes(manager.id))
       );
 
-      // Clear selection
       setSelectedManagers([]);
       setSelectionMode(false);
       setShowDeleteConfirmModal(false);
@@ -346,7 +339,6 @@ const ManagerList = () => {
       setShowDeleteConfirmModal(false);
     }
   };
-  // Function to toggle selection of a manager
   const toggleManagerSelection = (managerId) => {
     if (selectedManagers.includes(managerId)) {
       setSelectedManagers(selectedManagers.filter((id) => id !== managerId));
@@ -424,7 +416,6 @@ const ManagerList = () => {
     );
   }
 
-  // Group managers by department for better organization
   const groupManagersByDepartment = () => {
     const grouped = {};
 
